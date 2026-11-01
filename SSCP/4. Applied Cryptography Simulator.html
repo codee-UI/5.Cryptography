@@ -1,0 +1,238 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Applied Cryptography Simulator</title>
+<style>
+:root{--bg:#f6f6f3;--fg:#1c1c1a;--cd:#fff;--mu:#666;--ac:#2a5bd7;--bd:#d8d8d2;--rd:#c0392b;--gn:#1e8449;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#14151a;--fg:#ececea;--cd:#1e2027;--mu:#9a9a98;--ac:#7aa2ff;--bd:#33363f;--rd:#ff7b6b;--gn:#5fd38d}}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;padding:12px;max-width:1000px;margin:auto}
+h1{font-size:20px;margin:4px 0}h2{font-size:17px;margin:8px 0}h3{font-size:14px;margin:0 0 4px}.mu{color:var(--mu)}
+#nav{display:flex;gap:6px;overflow-x:auto;padding:6px 0}button,select,input,textarea{font:inherit;color:var(--fg);background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:6px 10px}
+button{cursor:pointer;white-space:nowrap}button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.cd{background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:12px;margin:10px 0}
+svg{width:100%;height:auto;display:block}.nd rect{fill:var(--cd);stroke:var(--ac);stroke-width:2}.nd.bad rect{stroke:var(--rd)}.nd.hot rect{fill:var(--ac);fill-opacity:.2;stroke-width:4}
+.nd text,#pk text{fill:var(--fg);font-size:13px;text-anchor:middle;dominant-baseline:middle}#pk rect{fill:var(--ac)}#pk text{fill:#fff;font-weight:600}.ed{stroke:var(--bd);stroke-width:2;stroke-dasharray:5 4}
+#ctl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}ol{padding-left:0;list-style:none;margin:8px 0}
+ol li{padding:6px 8px;border-left:4px solid var(--bd);cursor:pointer;margin:3px 0;border-radius:4px}ol li.on{border-color:var(--ac);background:var(--bg);font-weight:600}ol li.dn{opacity:.6}
+#note{min-height:48px;background:var(--bg);border-radius:8px;padding:8px 10px;margin-top:8px;border-left:4px solid var(--ac)}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}.g3 ul{margin:0;padding-left:18px}.pr h3{color:var(--gn)}.cn h3{color:var(--rd)}
+table{border-collapse:collapse;width:100%;font-size:13px}td,th{border-bottom:1px solid var(--bd);padding:5px;text-align:left;vertical-align:top}
+.lay div{padding:7px;margin:3px 0;border-radius:6px;text-align:center;color:#111;animation:gl 7s infinite;background:#ccc}.lay .r{display:flex;gap:4px;background:none;padding:0;animation:none}.lay .r span{flex:1;padding:7px;border-radius:6px;color:#fff;animation:gl 7s infinite}
+@keyframes gl{0%,100%{filter:none}8%,22%{filter:brightness(1.5) drop-shadow(0 0 6px var(--ac))}}
+.bits span{display:inline-block;padding:2px 5px;margin:1px;border-radius:4px;background:var(--bg);font-family:monospace}.bits b{color:var(--rd)}
+</style></head><body>
+<h1>🔐 Applied Cryptography Simulator</h1><div class="mu">Pick a topic, press ▶ and watch each step. Click any step to jump to it.</div>
+<div id="nav"></div>
+<div id="sim"><div class="cd"><h2 id="tt"></h2><div id="ds" class="mu"></div>
+<svg id="sv" viewBox="0 0 800 280"></svg>
+<div id="ctl"><button id="bp">▶ Play</button><button id="bb">⏮</button><button id="bn">⏭</button><button id="br">↺</button><label class="mu">Speed <select id="sp"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></label></div>
+<div id="note"></div><ol id="st"></ol></div>
+<div id="ex"></div>
+<div class="g3"><div class="cd pr"><h3>✅ Pros</h3><ul id="pro"></ul></div><div class="cd cn"><h3>⚠️ Cons</h3><ul id="con"></ul></div><div class="cd"><h3>🏛 Deployed in</h3><ul id="app"></ul></div></div></div>
+<div id="gl" hidden class="cd"><h2>Glossary: full forms</h2><input id="q" placeholder="Search…" style="width:100%;margin-bottom:8px"><table id="gt"></table></div>
+<script>
+const M=[
+{id:'cia',t:'1 · Secure protocols & CIA',d:'Secure protocols plus encryption give Confidentiality, Integrity and Authenticity for data in transit and at rest. Online banking is the classic use case.',
+n:[['C','Customer',90,130],['B','Bank server',400,130],['D','Database',710,130],['A','Attacker',400,240,1]],
+s:[['C','B','TLS + certificate','Browser opens a TLS session. The bank certificate proves identity (Authenticity) and SSL/TLS stops eavesdropping and impersonation.'],
+['C','B','AES(card, PIN)','Sensitive data is encrypted with a symmetric key (AES): only authorised parties can read it (Confidentiality).'],
+['A','B','altered packet','An attacker modifies data in transit. The hash/MAC no longer matches, so the bank rejects it (Integrity).'],
+['B','D','AES at rest','Server stores records encrypted with AES; keys live in an HSM/KMS. 3DES, RSA/ECC are older or special-purpose options.'],
+['B','C','SFTP / HTTPS','Statements travel by SFTP/SCP, web pages by HTTPS, PII by TLS (GDPR, CCPA). Passwords are hashed (SHA), never MD5.']],
+pro:['Protects data in transit and at rest','Meets regulations (PCI DSS, GDPR, CCPA)','Builds customer trust'],con:['Complexity: protocols layered on protocols','Key management burden','Performance overhead'],
+app:['Online banking, card payments, e-commerce','Healthcare records (HIPAA)','Government e-services, cloud storage']},
+
+{id:'tls',t:'2 · SSL / TLS',d:'TLS sits between the application layer and TCP/IP. Handshake layer (Handshake, Change Cipher Spec, Alert) negotiates; Record layer fragments, compresses (legacy), adds a MAC and encrypts. SSL is deprecated and banned by PCI DSS.',
+x:'tls',n:[['C','Client',90,100],['S','Server',710,100],['A','CA / Root',400,240]],
+s:[['C','S','ClientHello','Client sends supported TLS versions, cipher suites and a random number.'],
+['S','C','ServerHello + Cert','Server picks version and cipher suite and sends its X.509v3 certificate (public key, serial, validity, CA signature).'],
+['C','A','verify cert','Client checks the CA signature chain, validity period and revocation status.'],
+['A','C','trusted ✔','Chain leads to a trusted root: the server identity is authenticated.'],
+['C','S','pre-master secret','Client sends a secret encrypted with the server public key (or uses Diffie-Hellman). Asymmetric crypto is used only here.'],
+['C','C','derive keys','Both sides compute the master secret, then symmetric session keys and MAC keys from the exchanged data.'],
+['C','S','ChangeCipherSpec + Finished','Client announces: from now on everything is protected with the negotiated keys.'],
+['S','C','ChangeCipherSpec + Finished','Server confirms. Handshake complete.'],
+['C','S','Record: AES + HMAC','Record protocol splits data into fragments, adds a MAC, encrypts with fast symmetric AES and sends over TCP.'],
+['S','C','Alert: close_notify','Alert sub-protocol signals errors or an orderly close.']],
+pro:['Transparent to many application protocols','Strong hybrid crypto: speed plus safe key exchange','Server (and optionally client) authentication','Mature, widely supported'],con:['Needs PKI/CA trust and certificate upkeep','Handshake adds latency and CPU cost','Old SSL/early TLS are vulnerable (POODLE, BEAST)','Misconfiguration risk'],
+app:['HTTPS web, online banking, e-commerce (PCI DSS)','Email transport (SMTPS, IMAPS), VoIP signalling','Military/government portals','OpenVPN, mobile app APIs']},
+
+{id:'hyb',t:'3 · Hybrid crypto, hash & HMAC',d:'Asymmetric crypto safely shares a key; symmetric crypto encrypts the bulk data. Hashes give integrity; HMAC adds a shared secret for proof of origin.',
+n:[['A','Sender',90,100],['B','Receiver',710,100],['M','Attacker',400,240,1]],
+s:[['A','A','digest = H(msg)','A hash algorithm (agreed in handshake) creates a fixed-size digest of the entire message.'],
+['A','A','HMAC = H(msg + secret)','A second shared secret is mixed into the hash, giving integrity AND basic proof of origin.'],
+['A','B','session key (RSA/DH)','Asymmetric encryption or Diffie-Hellman delivers the session key over an insecure channel.'],
+['A','B','AES(msg) + HMAC','The message is encrypted with the fast symmetric session key and sent with the HMAC.'],
+['B','B','recompute and compare','Receiver recomputes the HMAC. Match = untampered and from someone holding the secret.'],
+['M','B','forged message','Attacker has no secret key, so the HMAC does not match: message discarded.']],
+pro:['Speed of symmetric + key distribution of asymmetric','Detects tampering','HMAC proves origin'],con:['Both sides must protect the shared secret','Weak hashes (MD5, SHA-1) are broken','Does not hide message length/metadata'],
+app:['TLS, IPsec, SSH sessions','API request signing (JWT-HS256, AWS SigV4)','Secure software updates, banking messaging']},
+
+{id:'pki',t:'4 · PKI & certificates',d:'PKI publishes public keys and binds them to identities through certificates signed by a Certificate Authority, organised in a hierarchy of trust (root CA at the top).',
+n:[['O','Organisation',80,130],['R','RA',300,240],['C','CA',400,40],['T','Root CA',720,40],['B','Browser',720,200]],
+s:[['O','O','generate key pair','Owner makes a public/private pair and keeps the private key secret.'],
+['O','R','CSR + identity proof','Certificate request with the public key; the Registration Authority checks the requester identity (calls, documents).'],
+['R','C','identity confirmed','RA vouches for the requester to the CA.'],
+['C','O','signed X.509 cert','CA issues a certificate binding identity to public key: serial no., validity period, issuer, digital signature.'],
+['O','B','present certificate','Website sends its certificate when the browser connects.'],
+['B','T','verify chain','Browser follows intermediate CA to a trusted root (hierarchy of trust); cross-certification links separate roots.'],
+['C','B','CRL / OCSP','Revocation status is checked so stolen or expired certificates are rejected.'],
+['B','B','🔒 trusted','Valid dates + good signature + not revoked = padlock shown.']],
+pro:['Scales to billions of users','Strong, standardised identity binding','Enables TLS, signing, email encryption'],con:['Single point of failure if a CA is compromised','Cost and admin of certificates','Revocation checking is imperfect','Does not suit small orgs (NIST SP 1800-16 gap)'],
+app:['HTTPS websites, code signing','Government eID and e-passports','Military PKI (CAC cards), banking, enterprise Wi-Fi/VPN']},
+
+{id:'wot',t:'5 · Web of trust (PGP)',d:'Decentralised alternative to CAs, proposed by Phil Zimmermann (1992). Peers vouch for each other public keys.',
+n:[['A','Alex',90,130],['S','Sam',400,40],['Z','Zach',710,130],['E','Fake key',400,240,1]],
+s:[['A','S','Alex trusts Sam','Alex already knows and trusts Sam key.'],
+['S','Z','Sam signs Zach key','Sam has verified Zach in person and signed his public key.'],
+['S','A','Sam vouches','Sam tells Alex: this really is Zach key. Trust is transitive through the web.'],
+['A','Z','encrypt with Zach pub','Only Zach private key can decrypt: confidentiality.'],
+['E','A','spoofed key','A fake Zach key has no trusted signatures, so Alex rejects it.']],
+pro:['No central authority or fees','Fault-tolerant; users can link several webs'],con:['Hard to scale; needs user effort','Trust decisions are subjective','Revocation is hard'],
+app:['PGP / GnuPG / OpenPGP email','Open-source package signing (Linux)','Journalists, activists, developer communities']},
+
+{id:'ips',t:'6 · IPsec',d:'Suite securing IP with authentication and encryption (mandatory in IPv6). Components: IKE/ISAKMP, SA, AH, ESP; modes: tunnel (default) and transport.',
+n:[['H','Host A',50,130],['G','Gateway 1',260,130],['K','Gateway 2',540,130],['J','Host B',750,130]],
+s:[['G','K','IKE Phase 1','Peers authenticate with shared secret, certificates or nonce-based revised public-key mode, creating a temporary SA and secure channel.'],
+['G','K','IKE Phase 2','Inside that tunnel they negotiate IPsec SAs. An SA is one-way, so two SAs are needed for two-way traffic.'],
+['H','G','plain IP packet','Host sends ordinary traffic to its gateway.'],
+['G','G','encapsulate (tunnel)','Tunnel mode: entire packet plus header becomes the payload of a new IP packet.'],
+['G','K','ESP: SPI+seq | enc | auth','ESP header (SA id, sequence no.), encrypted payload (symmetric, IV), trailer/padding, integrity value.'],
+['G','K','AH: hash + seq','AH variant gives integrity and anti-replay only (no encryption). Sequence numbers thwart replay.'],
+['G','K','NAT-T UDP 4500','NAT changes IP headers (seen as attack), so IPsec is wrapped in UDP 4500.'],
+['K','J','decrypt + verify','Gateway verifies, decrypts and delivers. Transport mode (Host A to B directly) protects only the payload; HAIPE devices harden this for military use.']],
+pro:['Works at IP layer: protects all applications','Strong encryption and anti-replay','Standard, interoperable (IKE/PKI)','Hardware (HAIPE) option'],con:['Complex configuration','NAT issues (need NAT-T)','Authenticates hosts, not users, unless L2TP/proprietary','Overhead added to packets'],
+app:['Site-to-site VPNs between firewalls','Military and government links (HAIPE)','Rail, air, emergency services CCTV/telemetry','Remote workers (L2TP/IPsec)']},
+
+{id:'vpn',t:'7 · VPN protocols',d:'A VPN is a point-to-point connection; security depends on the protocol chosen: PPTP (weak), L2TP (needs IPsec) and OpenVPN (SSL/TLS).',
+n:[['U','Remote user',80,130],['I','ISP / LAC',280,40],['G','VPN gateway / LNS',560,130],['L','Corp. network',750,240]],
+s:[['U','G','PPTP: TCP 1723 + MS-CHAPv2','PPTP authenticates the user, then builds a PPP session tunnelled through GRE. Key derived from the password: weak.'],
+['U','I','L2TP: PPP dial-in','User reaches the ISP L2TP Access Concentrator (LAC) over PPP.'],
+['I','G','L2TP UDP 1701 → LNS','LAC encapsulates PPP into L2TP and forwards to the LNS, which authenticates the user. L2TP has no encryption.'],
+['I','G','add IPsec ESP','L2TP/IPsec: tunnel-mode IPsec supplies confidentiality.'],
+['U','G','OpenVPN: TLS + certs','OpenVPN authenticates with certificates, pre-shared keys or user/password and uses OpenSSL/TLS.'],
+['G','L','access intranet','After authentication the user gets office-like access to resources.']],
+pro:['Cheaper than leased lines','Remote and branch access','OpenVPN: open source, flexible, firewall-friendly'],con:['PPTP broken: do not use','L2TP alone is not encrypted','Password-only auth is weak (prefer 2FA)','Misconfiguration voids security'],
+app:['Corporate remote work','Gateway-to-gateway links to partners','Defence contractors and field units','Privacy/commercial VPN services']},
+
+{id:'ste',t:'8 · Steganography & null cipher',d:'Cryptography protects the contents of a message; steganography hides its existence. A null cipher hides it inside ordinary plaintext. Try the live demos below the stage.',
+x:'ste',n:[['S','Sender',90,130],['C','Cover file',400,130],['R','Receiver',710,130],['W','Warden',400,240,1]],
+s:[['S','S','secret message','Optionally encrypt first, then hide: doubly protected.'],
+['S','C','embed in LSBs','Least significant bit of each pixel/audio byte is replaced by a secret bit: change is invisible.'],
+['C','R','looks like a normal image','File travels openly (also: covert channels, hidden web text, invisible ink, microdots).'],
+['W','C','nothing suspicious','Observer sees only an ordinary picture.'],
+['R','R','extract LSBs','Receiver with the right tool reads the hidden bits.'],
+['S','R','null cipher','Words carry the message: take the first letter of each word of an innocent sentence.']],
+pro:['Hides that communication exists','Digital watermarking proves ownership','Combines with encryption'],con:['Low capacity; fragile to compression','Steganalysis can detect it','Security by obscurity if used alone','Abused for malware C2 and exfiltration'],
+app:['Copyright watermarking, document tracing','Intelligence/military covert messages (e.g. 1898 null cipher)','Censorship circumvention','Printer tracking dots, forensics']},
+
+{id:'key',t:'9 · Key management lifecycle',d:'Most cryptosystems fail through key management, not algorithms. Kerckhoffs/Shannon: security rests on the key, not on secrecy of the algorithm.',
+x:'key',n:[['G','RNG / generator',70,130],['K','KMS / HSM',250,130],['U','Users',430,130],['A','Archive',600,130],['X','Destroy',750,130]],
+s:[['G','K','generate (random)','Use hardware RNG or approved PRNG (NIST, ISO 18031). Manual keys cluster and are guessable. Mind key space size and distribution.'],
+['K','K','wrap with KEK','Key-encrypting key wraps session keys; each record signed/MACed; keys stored in HSM, smart card or split.'],
+['K','U','distribute','Diffie-Hellman, certificates or courier, protected against MITM. XKMS: X-KISS locates/validates keys, X-KRSS registers/recovers.'],
+['U','U','use within cryptoperiod','Keys expire (see table): short periods limit exposure, but too-frequent manual rekeying invites errors.'],
+['K','A','backup / archive','Back up root keys, allow recovery, keep key history for old backups, audits and litigation.'],
+['A','X','revoke / destroy','Retire expired or compromised keys; keep verify-only copies to validate old signatures; wipe securely.']],
+pro:['Central control, audit, rotation','Limits damage from compromise','Meets compliance'],con:['Single point of failure (vault/HSM)','Human error, cost, complexity','Maturity path: unmanaged → password vault → enterprise KMS'],
+app:['Cloud KMS (AWS, Azure, Google)','HSMs in banks and payment networks','Military key loading devices','Enterprise PKI, database encryption']},
+
+{id:'lim',t:'10 · Limitations & vulnerabilities',d:'Layering protocols on protocols raises complexity. Limits: computation, key management, human factors. Vulnerabilities: cryptanalysis, implementation errors, protocol flaws.',
+n:[['A','Cryptanalyst',90,40,1],['H','Humans',90,220],['D','Developers',710,40],['S','Crypto system',400,130],['P','Protocol attacker',710,220,1]],
+s:[['A','S','cryptanalytic attack','Brute force, frequency, differential, linear or side-channel analysis; works on short keys or weak algorithms.'],
+['H','S','human factors','Weak or reused passwords, shared keys, phishing, coercion.'],
+['D','S','implementation error','Bugs, poor testing or backdoors in code or integration.'],
+['P','S','protocol flaws','Replay, man-in-the-middle and denial-of-service via design flaws.'],
+['S','S','computational cost','Bigger keys = slower, more memory and power.'],
+['S','S','key management','Loss, theft, rotation and revocation mistakes (even Enigma fell to discarded keys).']],
+pro:['Knowing the risks drives better design'],con:['Cryptography is only as strong as its weakest link','No algorithm is secure forever'],
+app:['Security audits, threat modelling','Penetration testing, compliance reviews','Post-quantum cryptography planning']}
+];
+const G=[
+['AES','Advanced Encryption Standard','Symmetric block cipher; bulk and at-rest encryption'],
+['AH','Authentication Header','IPsec protocol giving integrity and origin proof, no encryption'],
+['CA','Certificate Authority','Trusted party that signs certificates'],
+['CCPA','California Consumer Privacy Act','US state privacy law'],
+['CRL','Certificate Revocation List','List of revoked certificates'],
+['CSR','Certificate Signing Request','Request sent to a CA to obtain a certificate'],
+['DH','Diffie-Hellman','Key agreement over an insecure channel'],
+['DN','Distinguished Name','Structured identity name in certificates'],
+['ECC','Elliptic Curve Cryptography','Asymmetric crypto with shorter keys'],
+['ESP','Encapsulating Security Payload','IPsec protocol that encrypts and authenticates'],
+['GDPR','General Data Protection Regulation','EU privacy regulation'],
+['GRE','Generic Routing Encapsulation','Tunnelling used by PPTP'],
+['HAIPE','High Assurance Internet Protocol Encryptor','Military-grade hardware IPsec extension'],
+['HMAC','Hash-based Message Authentication Code','Hash plus shared secret: integrity and origin'],
+['HSM','Hardware Security Module','Tamper-resistant key storage device'],
+['HTTPS','Hypertext Transfer Protocol Secure','HTTP over TLS'],
+['IETF','Internet Engineering Task Force','Standards body (RFCs)'],
+['IKE','Internet Key Exchange','IPsec authentication and SA setup in two phases'],
+['ISAKMP','Internet Security Association and Key Management Protocol','Framework for SAs and key exchange'],
+['IV','Initialization Vector','Random starting value for a cipher'],
+['KEK','Key Encrypting Key','Long-term key that wraps session keys'],
+['KINK','Kerberized Internet Negotiation of Keys','Kerberos-based IPsec key negotiation'],
+['KMS','Key Management System/Service','Central generation, storage and lifecycle of keys'],
+['L2F','Layer 2 Forwarding','Cisco tunnelling, ancestor of L2TP'],
+['L2TP','Layer 2 Tunneling Protocol','Tunnel (UDP 1701) without encryption; pairs with IPsec'],
+['LAC / LNS','L2TP Access Concentrator / Network Server','ISP-side and network-side L2TP endpoints'],
+['LSB','Least Significant Bit','Bit used to hide data in steganography'],
+['MAC','Message Authentication Code','Short tag proving integrity (also: Media Access Control in networking)'],
+['MD5','Message-Digest Algorithm 5','Broken hash; avoid'],
+['MITM','Man-in-the-Middle','Attacker relays and alters traffic'],
+['MS-CHAPv2','Microsoft Challenge-Handshake Authentication Protocol v2','PPTP user authentication'],
+['NAT-T','NAT Traversal','IPsec in UDP 4500 to pass NAT'],
+['OCSP','Online Certificate Status Protocol','Real-time certificate revocation check'],
+['OUP','Originator Usage Period','Time a key may be used to protect data'],
+['PCI DSS','Payment Card Industry Data Security Standard','Card-data standard; bans SSL'],
+['PGP','Pretty Good Privacy','Email encryption using web of trust'],
+['PII','Personally Identifiable Information','Data that identifies a person'],
+['PKI','Public Key Infrastructure','Systems, software and protocols to manage public keys and certificates'],
+['PPP','Point-to-Point Protocol','Link protocol carried inside VPN tunnels'],
+['PPTP','Point-to-Point Tunneling Protocol','Legacy VPN on TCP 1723; weak'],
+['PRNG / RNG','(Pseudo)Random Number Generator','Source of unpredictable key material'],
+['RA','Registration Authority','Verifies requester identity for the CA'],
+['RSA','Rivest-Shamir-Adleman','Classic asymmetric algorithm'],
+['SA','Security Association','One-way agreement on algorithms and keys'],
+['SCP / SFTP','Secure Copy / SSH File Transfer Protocol','Encrypted file transfer'],
+['SHA','Secure Hash Algorithm','Family of hash functions'],
+['SSL','Secure Sockets Layer','Obsolete predecessor of TLS'],
+['TLS','Transport Layer Security','Modern protocol securing data over TCP'],
+['VPN','Virtual Private Network','Point-to-point link across an untrusted network'],
+['XKMS','XML Key Management Specification','X-KISS (locate/validate) + X-KRSS (register/recover)'],
+['X.509v3','ITU-T certificate standard','Format for public-key certificates']
+];
+const $=s=>document.querySelector(s);let cur,si=-1,pl=0,sp=1,raf,tm,P={};
+const nav=$('#nav');M.forEach((m,i)=>nav.insertAdjacentHTML('beforeend',`<button data-i="${i}">${m.t}</button>`));nav.insertAdjacentHTML('beforeend','<button data-i="g">📖 Glossary</button>');
+nav.onclick=e=>{const b=e.target.closest('button');if(b)load(b.dataset.i)};
+const li=a=>a.map(x=>`<li>${x}</li>`).join('');
+function stop(){pl=0;clearTimeout(tm);cancelAnimationFrame(raf);$('#bp').textContent='▶ Play'}
+function load(i){stop();[...nav.children].forEach(b=>b.classList.toggle('on',b.dataset.i==i));
+if(i=='g'){$('#sim').hidden=1;$('#gl').hidden=0;return}
+$('#sim').hidden=0;$('#gl').hidden=1;cur=M[i];si=-1;P={};
+$('#tt').textContent=cur.t;$('#ds').textContent=cur.d;$('#pro').innerHTML=li(cur.pro);$('#con').innerHTML=li(cur.con);$('#app').innerHTML=li(cur.app);
+let h='';cur.n.forEach(n=>P[n[0]]=[n[2],n[3]]);
+const seen={};cur.s.forEach(s=>{const k=[s[0],s[1]].sort().join();if(s[0]!=s[1]&&!seen[k]){seen[k]=1;h+=`<line class="ed" x1="${P[s[0]][0]}" y1="${P[s[0]][1]}" x2="${P[s[1]][0]}" y2="${P[s[1]][1]}"/>`}});
+cur.n.forEach(n=>h+=`<g class="nd ${n[4]?'bad':''}" id="n${n[0]}"><rect x="${n[2]-58}" y="${n[3]-22}" width="116" height="44" rx="9"/><text x="${n[2]}" y="${n[3]}">${n[1]}</text></g>`);
+h+='<g id="pk" opacity="0"><rect rx="8" height="26" y="-13"/><text y="1"></text></g>';$('#sv').innerHTML=h;
+$('#st').innerHTML=cur.s.map((s,k)=>`<li data-k="${k}"><span class="mu">${k+1}.</span> ${s[2]}</li>`).join('');$('#note').textContent='Press ▶ Play to start.';
+$('#ex').innerHTML=cur.x?X[cur.x]():'';if(cur.x=='ste')ste();if(cur.x=='key')kc()}
+$('#st').onclick=e=>{const l=e.target.closest('li');if(l){stop();go(+l.dataset.k)}};
+function go(k){si=k;const[a,b,l,n]=cur.s[k];[...$('#st').children].forEach((e,j)=>{e.className=j==k?'on':j<k?'dn':''});$('#note').textContent=n;
+document.querySelectorAll('.nd').forEach(e=>e.classList.remove('hot'));$('#n'+a).classList.add('hot');$('#n'+b).classList.add('hot');
+const pk=$('#pk'),w=l.length*7.4+18,r=pk.querySelector('rect'),t=pk.querySelector('text');r.setAttribute('width',w);r.setAttribute('x',-w/2);t.textContent=l;pk.setAttribute('opacity',1);
+const A=P[a],B=P[b],same=a==b,t0=performance.now(),D=1500/sp;cancelAnimationFrame(raf);
+(function f(now){const u=Math.min(1,(now-t0)/D),e=u<.5?2*u*u:1-2*(1-u)**2;
+const x=A[0]+(B[0]-A[0])*e,y=same?A[1]-44-Math.sin(u*Math.PI)*8:A[1]+(B[1]-A[1])*e;pk.setAttribute('transform',`translate(${x},${y})`);
+if(u<1)raf=requestAnimationFrame(f);else if(pl){tm=setTimeout(()=>{if(si+1<cur.s.length)go(si+1);else stop()},1000/sp)}})(t0)}
+$('#bp').onclick=()=>{if(pl){stop();return}pl=1;$('#bp').textContent='⏸ Pause';go(si+1>=cur.s.length?0:si+1)};
+$('#bn').onclick=()=>{stop();go(Math.min(si+1,cur.s.length-1))};$('#bb').onclick=()=>{stop();go(Math.max(si-1,0))};$('#br').onclick=()=>load([...nav.children].findIndex(b=>b.classList.contains('on')));
+$('#sp').onchange=e=>sp=+e.target.value;
+function gt(f=''){$('#gt').innerHTML='<tr><th>Term</th><th>Full form</th><th>Meaning</th></tr>'+G.filter(r=>r.join(' ').toLowerCase().includes(f.toLowerCase())).map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}
+$('#q').oninput=e=>gt(e.target.value);gt();
+const X={tls:()=>`<div class="cd lay"><h3>SSL/TLS protocol stack (data flows down)</h3><div class="r"><span style="background:#5566ad">HTTP</span><span style="background:#ecc722;color:#111">FTP</span><span style="background:#4f4f4f;animation-delay:.3s">Telnet</span><span style="background:#3f9147;animation-delay:.4s">Other</span></div><div style="animation-delay:1s">Application layer</div><div class="r"><span style="background:#bbb;color:#111;animation-delay:2s">Handshake</span><span style="background:#999;animation-delay:2.2s">Change Cipher Spec</span><span style="background:#777;animation-delay:2.4s">Alert</span></div><div style="background:#ecc722;animation-delay:3.5s">Record layer: fragment → compress → MAC → encrypt</div><div style="background:#ecc722;animation-delay:5s">TCP/IP (transport)</div></div>`,
+ste:()=>`<div class="cd"><h3>Null cipher decoder</h3><textarea id="nt" rows="2" style="width:100%">Interesting how additional time explains better every daily task, inspiring more expectations.</textarea><div>First letters → <b id="no"></b></div><h3 style="margin-top:10px">LSB hiding: one character in 8 cover bytes</h3><input id="lc" maxlength="1" value="H" size="2"> <span id="lo" class="bits"></span></div>`,
+key:()=>`<div class="cd"><h3>Key space calculator</h3><input type="range" id="kb" min="8" max="256" value="64" style="width:70%"> <b id="kv"></b><div id="ko" class="mu"></div><h3 style="margin-top:10px">Example cryptoperiods</h3><table><tr><th>Key type</th><th>Originator</th><th>Recipient</th></tr><tr><td>Private signature</td><td>1–3 y</td><td>1–3 y</td></tr><tr><td>Symmetric data encryption</td><td>≤2 y</td><td>OUP + 3 y</td></tr><tr><td>Symmetric authentication</td><td>≤2 y</td><td>OUP + 3 y</td></tr><tr><td>Symmetric master</td><td>~1 y</td><td>~1 y</td></tr><tr><td>RNG keys</td><td>on reseed</td><td>on reseed</td></tr></table><p class="mu">Short periods limit exposure; too short overloads distribution and archive retrieval.</p></div>`};
+function ste(){const f=()=>{$('#no').textContent=$('#nt').value.split(/\s+/).filter(Boolean).map(w=>w[0]).join('').toUpperCase();
+const c=($('#lc').value||'H').charCodeAt(0),bits=c.toString(2).padStart(8,'0'),cov=[200,13,77,154,31,90,222,65];
+$('#lo').innerHTML=`'${$('#lc').value}' = ${bits}<br>`+cov.map((v,i)=>`<span>${v}→<b>${(v&254)|+bits[i]}</b></span>`).join('')};$('#nt').oninput=f;$('#lc').oninput=f;f()}
+function kc(){const f=()=>{const b=+$('#kb').value;$('#kv').textContent=b+' bits';const n=Math.pow(2,b),y=n/1e12/3.15e7/2;
+$('#ko').textContent=`Key space = 2^${b} ≈ ${n.toExponential(2)} keys. Brute force at 10¹² keys/s needs ≈ ${y<1?'< 1 year':y.toExponential(1)+' years'} on average. (4-digit PIN: 10,000 keys.)`};$('#kb').oninput=f;f()}
+load(0);
+</script></body></html>

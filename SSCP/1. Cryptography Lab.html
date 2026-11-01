@@ -1,0 +1,168 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Cryptography Lab</title>
+<style>
+:root{--bg:#eef2f6;--p:#fff;--ink:#14202b;--mu:#566574;--ac:#0a7d6e;--ac2:#1d4ed8;--bad:#c2410c;--ok:#15803d;--bd:#cbd5df;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0f1720;--p:#17222e;--ink:#e6edf3;--mu:#93a4b4;--ac:#2dd4bf;--ac2:#7aa2ff;--bad:#fb923c;--ok:#4ade80;--bd:#2b3b4a;color-scheme:dark}}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Georgia,"Times New Roman",serif}
+h1,h2,h3,button,input,.mono,nav{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+nav{background:var(--p);border-right:1px solid var(--bd);padding:16px 10px;position:sticky;top:0;height:100vh;overflow:auto}
+nav h1{font-size:18px;margin:4px 8px 12px}nav button{display:block;width:100%;text-align:left;border:0;background:none;color:var(--ink);padding:9px 10px;border-radius:6px;font-size:14px;cursor:pointer}
+nav button.on{background:var(--ac);color:#fff}nav button:hover:not(.on){background:var(--bg)}
+main{padding:24px;max-width:980px;width:100%}h2{margin:0 0 6px;font-size:26px}.sum{color:var(--mu);max-width:70ch}
+.card{background:var(--p);border:1px solid var(--bd);border-radius:10px;padding:16px;margin:16px 0}
+#flow{position:relative;display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-top:26px}
+.node{border:2px solid var(--bd);border-radius:8px;padding:10px 14px;font:600 14px system-ui;transition:.4s;background:var(--bg)}
+.node.done{border-color:var(--ac);color:var(--ac)}.node.on{background:var(--ac);color:#fff;border-color:var(--ac);transform:translateY(-4px)}
+.ar{color:var(--mu)}.pkt{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--bad);transition:transform .7s cubic-bezier(.5,0,.2,1);top:0;left:0}
+.ctl{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}button.b{background:var(--ac2);color:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:14px}button.b:focus-visible,nav button:focus-visible,input:focus-visible{outline:3px solid var(--bad);outline-offset:2px}
+#say{font-size:17px;margin-top:12px;min-height:3.2em}ol.st{padding-left:22px;margin:8px 0}ol.st li{padding:3px 0;cursor:pointer;color:var(--mu)}ol.st li.on{color:var(--ink);font-weight:bold}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.g3 h3{margin:0 0 6px;font-size:15px}.g3 ul{margin:0;padding-left:18px}.pro h3{color:var(--ok)}.con h3{color:var(--bad)}.ap h3{color:var(--ac2)}
+input[type=text],input:not([type]),input[type=search]{width:100%;padding:8px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--ink);font-size:15px}
+.mono{font:13px ui-monospace,Menlo,monospace;word-break:break-all;margin:6px 0}.grid256{display:grid;grid-template-columns:repeat(32,1fr);gap:2px;margin:8px 0}.grid256 i{aspect-ratio:1;background:var(--bd);border-radius:2px;transition:.3s}.grid256 i.d{background:var(--bad)}
+.verdict{font:700 16px system-ui;margin:8px 0}.ok{color:var(--ok)}.no{color:var(--bad)}
+table{border-collapse:collapse;font:13px system-ui;width:100%}td,th{border-bottom:1px solid var(--bd);padding:5px 8px;text-align:left}.scroll{overflow-x:auto}
+.q td{text-align:center;min-width:26px}.q td.h{text-align:left;font-weight:600}.q td[data-c]{opacity:0;transition:opacity .3s}.q td.sh{opacity:1}.q .keep{background:color-mix(in srgb,var(--ok) 25%,transparent)}.q .err{background:color-mix(in srgb,var(--bad) 40%,transparent)}
+.bar{height:12px;background:var(--ac);border-radius:6px;width:0;transition:width 1s}.chip{padding:2px 8px;border-radius:10px;font-size:12px;color:#fff}.lab{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0;font:14px system-ui}
+.freq{display:flex;align-items:flex-end;gap:2px;height:60px}.freq div{flex:1;background:var(--ac2);font:9px system-ui;color:var(--mu);text-align:center;transition:height .3s}
+@media(max-width:760px){.wrap{display:block}nav{position:static;height:auto;display:flex;overflow:auto;border-right:0;border-bottom:1px solid var(--bd)}nav h1{display:none}nav button{white-space:nowrap;width:auto}.g3{grid-template-columns:1fr}.grid256{grid-template-columns:repeat(16,1fr)}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body><div class="wrap"><nav id="nav"></nav><main id="main"></main></div><script>
+const D=[
+{id:"cia",t:"CIA triad & authenticity",w:null,
+ sum:"Cryptography protects confidentiality (nobody unauthorized reads it), integrity (nobody silently changes it), authenticity (you know who sent it) and availability (keys and systems stay usable).",
+ flow:["Plain data","Encrypt","Hash","Sign","Verify"],
+ steps:["Start with data that must be protected: personal data, trade secrets, payments.","Encryption with a secret key means only key holders can read it (confidentiality).","A hash gives a fixed-length fingerprint; any change alters it (integrity).","The sender encrypts the hash with a private key: a digital signature (authenticity, nonrepudiation).","The receiver decrypts the signature with the public key and compares hashes. Key management (generate, distribute, store, revoke) keeps everything available."],
+ pros:["Covers four security goals with a few building blocks","Mathematically verifiable, not trust-based"],
+ cons:["Only as strong as key management","Needs a secure algorithm, random keys, a secure channel and a trusted party"],
+ apps:["Secure email, messaging, VoIP, video calls","Cloud storage, backups, archives","Passwords, biometrics, tokens","Certificates, smart cards, RFID tags"]},
+{id:"sens",t:"Data sensitivity & protection",w:null,
+ sum:"Sensitivity depends on privacy rules, value and business impact. Data classification assigns a level; protection then follows the level.",
+ flow:["Raw data","Classify","Encrypt at rest","Mask on screen","Protect in transit"],
+ steps:["Data alone may be harmless, but combined with other data it can become sensitive.","Data classification assigns a sensitivity level by who may access it and the harm if disclosed or lost.","Disk, database and backup encryption protect stored data.","Obfuscation, masking and screen filters stop shoulder surfing (people or cameras watching a PIN pad or screen).","IPsec, SSL/TLS and S/MIME protect data crossing untrusted networks. Access control built on encryption also defends availability against denial of service."],
+ pros:["Spends protection effort where harm is greatest","Supports legal compliance and breach notification"],
+ cons:["Classification is judged case by case","Over-classifying slows work; under-classifying exposes data"],
+ apps:["Banking and card data (PCI DSS)","Hospitals: medical records (HIPAA-style rules)","Government and defense classified data","HTTPS websites and VPNs"]},
+{id:"entropy",t:"Entropy & randomness",w:"entropy",
+ sum:"Entropy measures unpredictability. Keys, salts and nonces need high entropy; predictable keys can be guessed even with a strong algorithm.",
+ flow:["Entropy source","Quality check","Extract/combine","Random key","Use in cipher"],
+ steps:["Sources: physical noise, user input, algorithms, or quantum phenomena (QRNG).","Evaluate quality and quantity: biased, correlated or compromised sources are weak.","Extract and combine several sources to remove bias.","Output a key whose every bit is unpredictable.","Higher entropy means more guesses for brute force: each added bit doubles the work."],
+ pros:["Directly sets brute-force resistance","QRNG gives physically unpredictable bits"],
+ cons:["Bad sources fail silently","Hardware QRNG costs more than software generators"],
+ apps:["Key and password generation","Online gaming and lotteries","Scientific simulation","Quantum RNG chips in phones and HSMs"]},
+{id:"hash",t:"Hashing & message digest",w:"hash",
+ sum:"A hash function turns input of any size into a fixed-length digest. It is easy to compute, practically irreversible, and a single changed bit changes the whole digest.",
+ flow:["Message","Hash H()","Digest","Send both","Receiver re-hashes","Compare"],
+ steps:["The originator has a message of any size.","The message runs through the hash algorithm H.","A fixed-size digest (e.g. 256 bits) comes out; size reveals nothing about the message.","Digest is appended to the message and both are sent.","The receiver hashes the received message with the same algorithm.","Equal digests mean unchanged. Weakness: an attacker who changes both message and digest goes unnoticed, so digests are signed (see next modules)."],
+ pros:["Fast, fixed-size output","Detects any alteration (avalanche effect)","Used for file download checks"],
+ cons:["Plain hash does not stop an attacker swapping both message and digest","Weak algorithms (MD5, SHA-1) suffer collisions"],
+ apps:["Software download verification","Digital signatures, MACs","Deduplication and fingerprinting","Checksums for corrupted data"]},
+{id:"hashes",t:"Hash algorithm family",w:"hashes",
+ sum:"MD2/4/5, SHA-0/1/2/3, HAVAL and RIPEMD-160 differ in digest size, block size, rounds and, importantly, which are still safe.",
+ flow:["MD2/4/5","SHA-0/1","SHA-2","SHA-3 (Keccak)","RIPEMD/HAVAL"],
+ steps:["MD family (1989-1992): MD2 128-bit, MD4 three rounds, MD5 four rounds; all have published collision attacks.","SHA-0 was withdrawn for flaws; SHA-1 (1995, 160-bit) is no longer safe (birthday attack).","SHA-2 (2001): 224, 256, 384, 512-bit digests; blocks of 512 or 1024 bits.","SHA-3 (NIST 2015): Keccak sponge construction, absorbs any input then squeezes output. A drop-in alternative, not a replacement; SHA-2 stays.","HAVAL: configurable 128-256 bit. RIPEMD-160: European design, 160-bit, patent-free."],
+ pros:["SHA-2/3 remain strong","Standardized and built into every OS and browser","SHA-3 offers a different internal design as a backup"],
+ cons:["Older members are broken","Legacy systems still use them","Attacks keep appearing, so migration is ongoing"],
+ apps:["SHA-256: TLS certificates, Bitcoin","RIPEMD-160: Bitcoin addresses","MD2: legacy PKI certificates","MD4/MD5: legacy file sync (not for security)"]},
+{id:"sig",t:"Digital signature (hash + key)",w:"sig",
+ sum:"A signature encrypts the hash with the sender’s private key. Anyone can check it with the public key, so the attacker cannot forge a matching digest.",
+ flow:["Message","Hash","Sign with private key","Transmit","Verify with public key","Accept / reject"],
+ steps:["Sender prepares the message.","Hash the message to a digest.","Encrypt the digest with the sender’s private key to make the signature.","Send message + signature across the network (attacker may tamper here).","Receiver decrypts the signature with the public key and hashes the received message.","Match = intact and from the claimed sender. Mismatch = reject."],
+ pros:["Authenticity, integrity and nonrepudiation together","Public verification, no shared secret"],
+ cons:["Needs PKI and trusted certificates","Private key theft breaks everything","Slower than plain hashing"],
+ apps:["Code signing and software updates","TLS certificates","E-contracts, e-invoicing","Government e-ID and passports"]},
+{id:"salt",t:"Salting passwords",w:"salt",
+ sum:"A random salt is added to each password before hashing. Identical passwords give different stored hashes and precomputed rainbow tables stop working.",
+ flow:["Password","Add random salt","Hash","Store salt + hash","Login: repeat","Compare"],
+ steps:["User chooses a password.","A new random salt is generated for this user.","Salt and password are concatenated and hashed.","Database stores the salt and the hash, never the plaintext.","At login the typed password is combined with the stored salt and hashed again.","Equal hashes authenticate the user. A rainbow table would need entries for every salt, which is infeasible."],
+ pros:["Defeats rainbow tables and dictionary reuse","Hides duplicate passwords"],
+ cons:["Does not stop brute force on weak passwords","Needs slow hashes (bcrypt, Argon2) for real strength"],
+ apps:["Linux /etc/shadow","Web app user databases","WordPress, Django, banking logins","Password managers"]},
+{id:"caesar",t:"Caesar vs DES (CrypTool)",w:"caesar",
+ sum:"Both are symmetric ciphers. Caesar shifts letters and keeps word shapes, so frequency analysis breaks it. DES scrambles blocks so the ciphertext leaks little.",
+ flow:["Plaintext","Choose key","Encrypt","Ciphertext","Attacker analyses"],
+ steps:["Plaintext: “The quick brown fox jumps over the lazy dog”.","Key: Caesar uses a shift (1 of 25); DES uses a 56-bit key.","Encrypt: Caesar rotates letters; DES transforms 64-bit blocks in 16 rounds.","Caesar output keeps spaces and repeats (“vjg” twice). DES output is a hex blob.","The attacker finds repeated words and letter frequencies, or just tries all 26 shifts. DES needs real key search."],
+ pros:["Caesar: easy to teach","DES: far better diffusion"],
+ cons:["Caesar: trivially breakable","DES: 56-bit key is now brute-forceable; replaced by AES"],
+ apps:["Caesar: teaching, puzzles (ROT13)","DES/3DES: legacy banking and ATM systems","AES: modern successor everywhere","CrypTool: free learning portal"]},
+{id:"qkd",t:"Quantum key distribution (BB84)",w:"qkd",
+ sum:"Alice sends photons in random bases; Bob measures in random bases. An eavesdropper Eve disturbs the photons, raising the error rate and exposing her.",
+ flow:["Alice sends photons","Bob measures","Compare bases","Check errors","Distill key / abort"],
+ steps:["Alice encodes random bits in random bases (+ or ×) on single photons.","Bob measures each in a random basis; wrong basis gives a random result.","Over a public channel they compare bases only and keep matching positions (sifting).","They sample the kept bits: Eve’s interception causes errors (about 25% in this model).","Below threshold (~11%): error correction and privacy amplification yield a key, then AES or one-time pad. Above: abort and retry."],
+ pros:["Eavesdropping is detectable (no-cloning theorem)","Information-theoretic key security"],
+ cons:["Low key rate, high cost, limited distance","Needs special hardware, noise-sensitive"],
+ apps:["Finance: bank-to-bank links (e.g. Geneva, Vienna trials)","Defense: command links, satellite QKD (China Micius)","Healthcare: protected records","Science: secure research data sharing"]},
+{id:"qproto",t:"Quantum protocols: QSDC, QDS, QRNG, QSS",w:null,
+ sum:"Beyond QKD, quantum physics supports direct secret messaging, signatures, true random numbers and shared secrets.",
+ flow:["QSDC","QDS","QRNG","QSS","Quantum tech stack"],
+ steps:["QSDC sends the secret message directly with entanglement and no-cloning, with no prior key (military, diplomatic).","QDS signs with a quantum state that many recipients can verify; prevents forgery and repudiation (e-voting, contracts).","QRNG derives random bits from photon detection or vacuum fluctuations (cryptography, gaming, simulation).","QSS lets a dealer split a secret so only a qualified subset can rebuild it (distributed computing, cloud storage).","Underneath: quantum communication, computation, measurement and error correction."],
+ pros:["Security rooted in physics","Enables post-quantum-era designs"],
+ cons:["Mostly experimental or niche","Needs error correction against decoherence"],
+ apps:["QRNG chips in smartphones","Diplomatic and military links","Quantum networks (EU, US, China)","Cloud-secret sharing research"]},
+{id:"law",t:"Dual-use cryptography & law",w:null,
+ sum:"Cryptography serves civilians and militaries, so countries regulate it, yet other laws demand it for protecting data.",
+ flow:["Algorithm","Export controls","Mandatory encryption","Standards (PCI DSS)","Product launch"],
+ steps:["Crypto is dual use: the same algorithm protects shoppers and soldiers.","Many countries treat it like weapons: restricted distribution and export.","Yet privacy and data laws require sensitive data to be protected.","Standards such as PCI DSS require cardholder data to be unreadable and need-to-know.","Companies selling worldwide must navigate conflicting rules; some governments see encrypted personal messaging as suspect."],
+ pros:["Keeps strong crypto from adversaries","Forces baseline data protection"],
+ cons:["Conflicting rules across countries","Compliance cost and legal uncertainty"],
+ apps:["Secure chat apps launching internationally","Payment processors (PCI DSS)","Defense exports","Cloud providers in multiple regions"]}];
+const G=[["CIA","Confidentiality, Integrity, Availability","Core security goals"],["MD2/4/5","Message Digest 2, 4, 5","Older 128-bit hash functions"],["SHA","Secure Hash Algorithm","NIST hash family (0, 1, 2, 3)"],["SHA-3","Secure Hash Algorithm 3 (Keccak)","Sponge-based hash, 2015"],["HAVAL","Hash of Variable Length","Configurable 128-256 bit hash"],["RIPEMD","RACE Integrity Primitives Evaluation Message Digest","160-bit European hash"],["RACE","Research and Development in Advanced Communications Technologies in Europe","Project behind RIPEMD"],["MAC","Message Authentication Code","Keyed hash proving origin and integrity"],["PKI","Public-Key Infrastructure","Certificates and trust system"],["DES","Data Encryption Standard","56-bit symmetric block cipher"],["AES","Advanced Encryption Standard","Modern symmetric cipher"],["ECB","Electronic Codebook","Simplest block cipher mode"],["QKD","Quantum Key Distribution","Key exchange using photons"],["BB84","Bennett-Brassard 1984","First QKD protocol"],["QSDC","Quantum Secure Direct Communication","Sends message without a key"],["QDS","Quantum Digital Signatures","Quantum-verifiable signatures"],["QRNG","Quantum Random Number Generation","Random bits from quantum sources"],["QSS","Quantum Secret Sharing","Split a secret among participants"],["QBER","Quantum Bit Error Rate","Error fraction used to detect Eve"],["TLS","Transport Layer Security","Encrypts web traffic"],["SSL","Secure Sockets Layer","Predecessor of TLS"],["IPsec","Internet Protocol Security","Network-layer encryption"],["S/MIME","Secure/Multipurpose Internet Mail Extensions","Email encryption and signing"],["PCI DSS","Payment Card Industry Data Security Standard","Card data rules"],["NIST","National Institute of Standards and Technology","US standards body"],["PIN","Personal Identification Number","Short secret code"],["RFID","Radio Frequency Identification","Tags that carry identity"],["HSM","Hardware Security Module","Tamper-resistant key device"],["Salt","Random per-password value","Added before hashing"],["Rainbow table","Precomputed hash-to-password lookup","Defeated by salting"],["Entropy","Measure of unpredictability","Bits of randomness"],["Nonrepudiation","Cannot deny involvement","Provided by signatures"]];
+const $=s=>document.querySelector(s),H=(s)=>s;
+const sha=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('');
+const rnd=()=>crypto.getRandomValues(new Uint8Array(1))[0]/256;
+let timer;
+function nav(){const n=$('#nav');n.innerHTML='<h1>Cryptography Lab</h1>'+D.map(m=>`<button data-id="${m.id}">${m.t}</button>`).join('')+'<button data-id="gl">Glossary of terms</button>';n.onclick=e=>{const id=e.target.dataset.id;if(id)open(id)}}
+function open(id){clearInterval(timer);document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.id==id));scrollTo(0,0);
+ if(id=='gl')return gloss();const m=D.find(x=>x.id==id);
+ $('#main').innerHTML=`<h2>${m.t}</h2><p class=sum>${m.sum}</p><div class=card id=wd ${m.w?'':'hidden'}></div>
+ <div class=card><div id=flow>${m.flow.map((n,i)=>`<div class=node>${n}</div>`).join('<span class=ar>›</span>')}<div class=pkt></div></div><div id=say></div>
+ <div class=ctl><button class=b id=pl>Pause</button><button class=b id=pv>Back</button><button class=b id=nx>Next step</button></div>
+ <h3>Working principle, step by step</h3><ol class=st>${m.steps.map(s=>`<li>${s}</li>`).join('')}</ol></div>
+ <div class="g3"><div class="card pro"><h3>Pros</h3><ul>${m.pros.map(x=>`<li>${x}</li>`).join('')}</ul></div><div class="card con"><h3>Cons</h3><ul>${m.cons.map(x=>`<li>${x}</li>`).join('')}</ul></div><div class="card ap"><h3>Where it works today</h3><ul>${m.apps.map(x=>`<li>${x}</li>`).join('')}</ul></div></div>`;
+ const nodes=[...document.querySelectorAll('.node')],lis=[...document.querySelectorAll('.st li')],pk=$('.pkt');let cur=0,play=true;
+ const go=i=>{cur=(i+nodes.length)%nodes.length;nodes.forEach((n,k)=>{n.classList.toggle('on',k==cur);n.classList.toggle('done',k<cur)});lis.forEach((l,k)=>l.classList.toggle('on',k==cur));$('#say').textContent=m.steps[cur];const n=nodes[cur];pk.style.transform=`translate(${n.offsetLeft+n.offsetWidth/2-8}px,${n.offsetTop-20}px)`};
+ lis.forEach((l,k)=>l.onclick=()=>go(k));$('#nx').onclick=()=>go(cur+1);$('#pv').onclick=()=>go(cur-1);
+ $('#pl').onclick=e=>{play=!play;e.target.textContent=play?'Pause':'Play'};timer=setInterval(()=>play&&go(cur+1),2600);go(0);
+ if(m.w)W[m.w]($('#wd'))}
+function gloss(){$('#main').innerHTML=`<h2>Glossary of terms</h2><p class=sum>Full forms and plain meanings of every abbreviation used here.</p><div class=card><input type=search id=gq placeholder="Filter, e.g. SHA or quantum"><div class=scroll><table id=gt></table></div></div>`;
+ const r=q=>$('#gt').innerHTML='<tr><th>Term</th><th>Full form</th><th>Meaning</th></tr>'+G.filter(g=>g.join(' ').toLowerCase().includes(q.toLowerCase())).map(g=>`<tr><td><b>${g[0]}</b></td><td>${g[1]}</td><td>${g[2]}</td></tr>`).join('');r('');$('#gq').oninput=e=>r(e.target.value)}
+const W={};
+W.hash=el=>{const base='The red fox jumps over the blue dog';el.innerHTML=`<b>Avalanche effect:</b> edit the text; the 256 squares show which digest bits changed versus the original.<input id=hi value="${base}"><div class=lab>Original:<span class=mono id=h1></span></div><div class=lab>Yours:<span class=mono id=h2></span></div><div class=grid256>${'<i></i>'.repeat(256)}</div><div class=verdict id=hv></div><div class=lab>Try: <button class=b id=hf>Change “over” to “oe r”</button></div>`;
+ const bits=h=>[...h].map(c=>parseInt(c,16).toString(2).padStart(4,'0')).join('');
+ const run=async()=>{const a=await sha(base),b=await sha($('#hi').value);$('#h1').textContent=a;$('#h2').textContent=b;const x=bits(a),y=bits(b);let d=0;el.querySelectorAll('.grid256 i').forEach((c,i)=>{const z=x[i]!=y[i];d+=z;c.classList.toggle('d',z)});$('#hv').innerHTML=d?`<span class=no>${d} of 256 bits changed (${Math.round(d/2.56)}%). Digest differs, so tampering is detected.</span>`:'<span class=ok>Identical: digests match, message unchanged.</span>'};
+ $('#hi').oninput=run;$('#hf').onclick=()=>{$('#hi').value=base.replace('over','oe r');run()};run()};
+W.sig=el=>{el.innerHTML=`<div class=lab><label><input type=checkbox id=t1> Attacker changes message</label><label><input type=checkbox id=t2> Attacker also replaces digest</label><label><input type=checkbox id=t3 checked> Digest is signed (private key)</label></div><input id=sm value="Pay Alice 100"><div class=mono id=so></div><div class=verdict id=sv></div><small>Simplified: the signature is modelled with a secret key only the sender holds; real systems use RSA or ECDSA.</small>`;
+ const h=s=>{let a=5381;for(const c of s)a=(a*33^c.charCodeAt(0))>>>0;return a.toString(16).padStart(8,'0')};
+ const sig=d=>h('PRIVKEY'+d);const run=()=>{const m=$('#sm').value,tam=$('#t1').checked,rep=$('#t2').checked,sg=$('#t3').checked;const rm=tam?m+' 000':m;const sd=h(m);let sent=sd,ssig=sg?sig(sd):'-';
+  if(rep){sent=h(rm);ssig=sg?'forged?':'-'}const rd=h(rm);let ok=sent==rd;if(sg)ok=ok&&ssig==sig(sent);
+  $('#so').innerHTML=`Sender: msg “${m}” → H=${sd}${sg?' → signature '+sig(sd):''}<br>Network: msg “${rm}”, digest ${sent}, signature ${ssig}<br>Receiver: H(received)=${rd}`;
+  $('#sv').innerHTML=ok?'<span class=ok>Verified: intact'+(sg?' and signed by sender':'')+'</span>':'<span class=no>Rejected: mismatch</span>';if(!sg&&tam&&rep)$('#sv').innerHTML='<span class=no>Attack succeeded: plain hash accepted forged data. Sign the digest.</span>'};
+ el.querySelectorAll('input').forEach(i=>i.oninput=run);run();
+ const sv=$('#sv');new MutationObserver(()=>{}).observe(sv,{childList:true})};
+W.salt=el=>{el.innerHTML=`<div class=lab>Two users pick the same password:<input id=sp value=password style="max-width:200px"><button class=b id=sr>New salts</button></div><table><tr><th>User</th><th>Salt</th><th>Unsalted hash</th><th>Salted hash (stored)</th></tr><tr id=u1></tr><tr id=u2></tr></table><div class=verdict id=sl></div>`;
+ const rs=()=>[...crypto.getRandomValues(new Uint8Array(4))].map(b=>b.toString(16).padStart(2,'0')).join('');let s1=rs(),s2=rs();
+ const common=['123456','password','letmein','qwerty','admin'];const rt={};Promise.all(common.map(async c=>rt[await sha(c)]=c)).then(()=>run());
+ const run=async()=>{const p=$('#sp').value;const u=await sha(p),a=await sha(s1+p),b=await sha(s2+p);const row=(i,s,x)=>`<td>${i}</td><td class=mono>${s}</td><td class=mono>${u.slice(0,14)}…</td><td class=mono>${x.slice(0,14)}…</td>`;$('#u1').innerHTML=row('Alice',s1,a);$('#u2').innerHTML=row('Bob',s2,b);
+  $('#sl').innerHTML=`Rainbow table on unsalted hash: ${rt[u]?`<span class=no>cracked → “${rt[u]}” for both users at once</span>`:'<span class=ok>not in table</span>'}<br>On salted hashes: <span class=ok>no entry (table would need every salt)</span>`};
+ $('#sp').oninput=run;$('#sr').onclick=()=>{s1=rs();s2=rs();run()};run()};
+W.caesar=el=>{el.innerHTML=`<div class=lab>Shift: <input type=range id=ck min=1 max=25 value=2 style="max-width:240px"><b id=kv>2</b><button class=b id=ka>Attacker tries all shifts</button></div><input id=ct value="The quick brown fox jumps over the lazy dog"><div class=lab>Caesar: <span class=mono id=co></span></div><div class=lab>DES-ECB sample: <span class=mono>91 7D 55 11 F3 7D 6C 48 AD BE 95 31 F3 DC EB 35 12 B4 E0 C8 FE 6B F6 AB 28 50 E9 F9 A6 CE AE FE 69 8C E1 33 A4 B9 43 AD 46 8E 9E 1C C5 DB 66 6F</span></div><div id=cn></div><small>Letter frequency of the Caesar ciphertext (peaks reveal the shift):</small><div class=freq id=cf></div>`;
+ const enc=(s,k)=>s.replace(/[a-z]/gi,c=>{const b=c<'a'?65:97;return String.fromCharCode((c.charCodeAt(0)-b+k+26)%26+b)});
+ const run=()=>{const k=+$('#ck').value,c=enc($('#ct').value,k);$('#kv').textContent=k;const w=c.toLowerCase().split(/\s+/),cnt={};w.forEach(x=>cnt[x]=(cnt[x]||0)+1);$('#co').innerHTML=c.split(/(\s+)/).map(x=>cnt[x.toLowerCase()]>1&&x.trim()?`<mark>${x}</mark>`:x).join('');
+  const f=Array(26).fill(0);c.toLowerCase().replace(/[a-z]/g,x=>f[x.charCodeAt(0)-97]++);const mx=Math.max(...f,1);$('#cf').innerHTML=f.map((v,i)=>`<div style="height:${6+v/mx*54}px">${String.fromCharCode(97+i)}</div>`).join('');
+  $('#cn').innerHTML=Object.values(cnt).some(v=>v>1)?'<span class=no>Repeated words (highlighted) leak the word structure. DES output shows none.</span>':''};
+ $('#ck').oninput=$('#ct').oninput=run;run();
+ $('#ka').onclick=()=>{const c=enc($('#ct').value,+$('#ck').value);let t=0;const iv=setInterval(()=>{const g=enc(c,26-t);$('#cn').innerHTML=`Attacker tries shift ${t}: <span class=mono>${g}</span>`;if(++t>26||/\bthe\b/i.test(g)&&t>1){clearInterval(iv);$('#cn').innerHTML+=' <b class=no>readable, broken in ≤25 tries</b>'}},350)}};
+W.qkd=el=>{el.innerHTML=`<div class=lab><label><input type=checkbox id=eve> Eve intercepts and resends photons</label><button class=b id=run>Send 24 photons</button></div><div class=scroll><table class=q id=qt></table></div><div class=verdict id=qr></div><small>+ rectilinear, × diagonal basis. Green = bases match (kept). Orange = error in kept bit.</small>`;
+ $('#run').onclick=()=>{const n=24,R=()=>rnd()<.5?1:0,eve=$('#eve').checked,A=[],ab=[],eb=[],bb=[],bt=[];
+  for(let i=0;i<n;i++){const a=R(),x=R();let s=[a,x];if(eve){const e=R();eb.push(e);s=[e==x?a:R(),e]}const b=R();bb.push(b);A.push(a);ab.push(x);bt.push(b==s[1]?s[0]:R())}
+  let kept=0,err=0;const row=(l,f,cls)=>`<tr><td class=h>${l}</td>${A.map((_,i)=>`<td data-c=${i} class="${cls?cls(i):''}">${f(i)}</td>`).join('')}</tr>`;const ks=i=>ab[i]==bb[i],er=i=>ks(i)&&A[i]!=bt[i];
+  A.forEach((_,i)=>{if(ks(i)){kept++;if(er(i))err++}});
+  $('#qt').innerHTML=row('Alice bit',i=>A[i])+row('Alice basis',i=>ab[i]?'×':'+')+(eve?row('Eve basis',i=>eb[i]?'×':'+'):'')+row('Bob basis',i=>bb[i]?'×':'+')+row('Bob bit',i=>bt[i])+row('Keep?',i=>ks(i)?'✓':'·',i=>ks(i)?'keep':'')+row('Error?',i=>er(i)?'!':ks(i)?'ok':'',i=>er(i)?'err':'');
+  $('#qr').textContent='';let t=0;const iv=setInterval(()=>{el.querySelectorAll('td[data-c]').forEach(c=>+c.dataset.c<=t&&c.classList.add('sh'));if(++t>n){clearInterval(iv);const q=kept?err/kept:0;$('#qr').innerHTML=`Kept ${kept} bits, errors ${err}, error rate ${(q*100).toFixed(0)}%: `+(q>.11?'<span class=no>above ~11% threshold: Eve detected, abort and retry</span>':'<span class=ok>below threshold: run error correction and privacy amplification to get the secret key</span>')}},130)};$('#run').click()};
+W.entropy=el=>{el.innerHTML=`<div class=lab>Type a password:</div><input id=ep value="Tr0ub4dor&3"><div class=lab>Estimated entropy: <b id=eb></b> bits <span id=ec></span></div><div style="background:var(--bd);border-radius:6px"><div class=bar id=ebar></div></div><div class=ctl><button class=b id=eq>Flip 64 “quantum” coins</button></div><div class=mono id=eo></div><small>Entropy = length × log₂(character set size). Coin flips here use the browser’s secure random generator as a stand-in for a QRNG photon detector.</small>`;
+ const run=()=>{const p=$('#ep').value;let c=0;if(/[a-z]/.test(p))c+=26;if(/[A-Z]/.test(p))c+=26;if(/\d/.test(p))c+=10;if(/[^a-zA-Z0-9]/.test(p))c+=33;const e=p.length*Math.log2(c||1);$('#eb').textContent=e.toFixed(1);$('#ebar').style.width=Math.min(100,e/128*100)+'%';$('#ec').textContent=e<40?'(weak)':e<80?'(fair)':'(strong)'};
+ $('#ep').oninput=run;run();$('#eq').onclick=()=>{let s='',i=0;const iv=setInterval(()=>{s+=rnd()<.5?'0':'1';$('#eo').textContent=s;if(++i==64)clearInterval(iv)},40)}};
+W.hashes=el=>{const R=[["MD2","128","128","18","Legacy PKI","#b45309"],["MD4","128","512","3","Broken","#b91c1c"],["MD5","128","512","4","Collisions","#b91c1c"],["SHA-0","160","512","80","Withdrawn","#b91c1c"],["SHA-1","160","512","80","Unsafe","#b91c1c"],["SHA-224/256","224/256","512","64","Secure","#15803d"],["SHA-384/512","384/512","1024","80","Secure","#15803d"],["SHA-3 (Keccak)","224-512","sponge","24","Secure","#15803d"],["HAVAL","128-256","128","3-5","Rare","#b45309"],["RIPEMD-160","160","512","5×2","Niche, safe","#15803d"]];
+ el.innerHTML=`<table><tr><th>Algorithm</th><th>Digest bits</th><th>Block bits</th><th>Rounds</th><th>Status</th><th>Digest size</th></tr>${R.map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td><span class=chip style="background:${r[5]}">${r[4]}</span></td><td style="width:25%"><div class=bar data-w=${parseInt(r[1].split(/[\/-]/).pop())/512*100}></div></td></tr>`).join('')}</table><small>Textbook text lists SHA-1 with 8 rounds; the standard defines 80 steps. Round counts for SHA-2/3 are the standard values.</small>`;
+ setTimeout(()=>el.querySelectorAll('.bar').forEach(b=>b.style.width=b.dataset.w+'%'),50)};
+nav();open('cia');
+</script></body></html>
